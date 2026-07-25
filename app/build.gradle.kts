@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.zielak.obsidianwear"
+    namespace = "com.obsidianwear.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.zielak.obsidianwear"
+        applicationId = "com.obsidianwear.app"
         minSdk = 30
         targetSdk = 34
         versionCode = 1
@@ -35,6 +35,6 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.activity:activity-ktx:1.8.2")
     implementation("androidx.wear:wear:1.3.0")
-    implementation("com.google.android.gms:play-services-wearable:18.1.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 }
