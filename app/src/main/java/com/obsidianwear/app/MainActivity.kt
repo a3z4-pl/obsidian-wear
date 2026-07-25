@@ -94,18 +94,25 @@ class MainActivity : ComponentActivity() {
         try {
             audioFile = File(cacheDir, "voice_note.webm")
             audioFile?.delete()
-            mediaRecorder = MediaRecorder().apply {
-                setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.WEBM)
-                setAudioEncoder(MediaRecorder.AudioEncoder.VORBIS)
-                setAudioSamplingRate(16000)
+            mediaRecorder = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                MediaRecorder(this)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
+            }
+            mediaRecorder?.apply {
+                setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioSamplingRate(44100)
+                setAudioEncodingBitRate(64000)
                 setOutputFile(audioFile?.absolutePath)
                 prepare()
                 start()
             }
         } catch (e: Exception) {
             stopRecordingState()
-            statusText.text = "✗ Błąd mikrofonu"
+            statusText.text = "✗ ${e.message?.take(25)}"
         }
     }
 
