@@ -20,6 +20,7 @@ android {
             "VOICE_API_KEY",
             "\"${System.getenv("VOICE_API_KEY") ?: ""}\""
         )
+        buildConfigField("String", "WHISPER_KEY", "\"***\"")
     }
 
     buildFeatures {

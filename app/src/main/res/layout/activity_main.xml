@@ -7,11 +7,24 @@
     app:layout_boxedEdges="all">
 
     <LinearLayout
+        android:id="@+id/root_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:background="#1E1B4B">
+
+        <TextView
+            android:id="@+id/timer_text"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="00:00"
+            android:textSize="32sp"
+            android:textColor="#F97316"
+            android:visibility="gone"
+            android:paddingBottom="8dp" />
 
         <TextView
             android:id="@+id/status_text"
