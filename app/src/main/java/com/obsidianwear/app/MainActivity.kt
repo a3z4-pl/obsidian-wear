@@ -1,4 +1,4 @@
-package com.zielak.obsidianwear
+package com.obsidianwear.app
 
 import android.Manifest
 import android.content.Intent
