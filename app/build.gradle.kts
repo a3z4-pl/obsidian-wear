@@ -14,6 +14,12 @@ android {
         versionCode = 1
         versionName = "1.0"
         buildConfigField("String", "SERVER_URL", "\"http://192.168.1.170:5001\"")
+        // Klucz API; w CI przez env, lokalnie fallback pustego (serwer bez auth)
+        buildConfigField(
+            "String",
+            "VOICE_API_KEY",
+            "\"${System.getenv("VOICE_API_KEY") ?: ""}\""
+        )
     }
 
     buildFeatures {
@@ -35,6 +41,6 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.activity:activity-ktx:1.8.2")
     implementation("androidx.wear:wear:1.3.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 }
