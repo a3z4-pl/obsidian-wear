@@ -6,47 +6,50 @@
     android:layout_height="match_parent"
     app:layout_boxedEdges="all">
 
-    <LinearLayout
-        android:id="@+id/root_layout"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="12dp"
-        android:background="#1E1B4B">
+        android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/timer_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <LinearLayout
+            android:id="@+id/root_layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:gravity="center"
-            android:text="00:00"
-            android:textSize="28sp"
-            android:textColor="#F97316"
-            android:visibility="gone" />
+            android:orientation="vertical"
+            android:background="#1E1B4B">
 
-        <TextView
-            android:id="@+id/status_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="Gotowy"
-            android:textSize="13sp"
-            android:textColor="#AAAAAA"
-            android:paddingTop="4dp"
-            android:paddingBottom="8dp"
-            android:maxLines="1"
-            android:ellipsize="end" />
+            <TextView
+                android:id="@+id/timer_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="00:00"
+                android:textSize="24sp"
+                android:textColor="#F97316"
+                android:visibility="gone" />
 
-        <Button
-            android:id="@+id/record_button"
-            android:layout_width="160dp"
-            android:layout_height="160dp"
-            android:gravity="center"
-            android:text="Nagraj"
-            android:textSize="16sp"
-            android:textColor="#FFFFFF"
-            android:background="@drawable/btn_round" />
+            <TextView
+                android:id="@+id/status_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Gotowy"
+                android:textSize="12sp"
+                android:textColor="#AAAAAA"
+                android:paddingBottom="6dp"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
-    </LinearLayout>
+            <Button
+                android:id="@+id/record_button"
+                android:layout_width="130dp"
+                android:layout_height="130dp"
+                android:gravity="center"
+                android:text="Nagraj"
+                android:textSize="14sp"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/btn_round" />
+
+        </LinearLayout>
+    </FrameLayout>
 </androidx.wear.widget.BoxInsetLayout>

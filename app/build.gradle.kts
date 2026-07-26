@@ -13,7 +13,8 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        buildConfigField("String", "SERVER_URL", "\"http://100.83.52.91:5001\"")
+        buildConfigField("String", "SERVER_URL", "\"http://192.168.1.170:5001\"")
+        buildConfigField("String", "SERVER_URL_REMOTE", "\"http://100.83.52.91:5001\"")
         // Klucz API; w CI przez env, lokalnie fallback pustego (serwer bez auth)
         buildConfigField(
             "String",
