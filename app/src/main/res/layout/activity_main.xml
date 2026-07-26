@@ -12,37 +12,39 @@
         android:layout_height="match_parent"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="16dp"
+        android:padding="12dp"
         android:background="#1E1B4B">
 
         <TextView
             android:id="@+id/timer_text"
-            android:layout_width="180dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="00:00"
-            android:textSize="32sp"
+            android:textSize="28sp"
             android:textColor="#F97316"
-            android:visibility="gone"
-            android:paddingBottom="8dp" />
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/status_text"
-            android:layout_width="180dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="Gotowy"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:textColor="#AAAAAA"
-            android:paddingBottom="12dp" />
+            android:paddingTop="4dp"
+            android:paddingBottom="8dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
         <Button
             android:id="@+id/record_button"
-            android:layout_width="180dp"
-            android:layout_height="180dp"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
             android:gravity="center"
             android:text="Nagraj"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:textColor="#FFFFFF"
             android:background="@drawable/btn_round" />
 

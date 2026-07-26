@@ -13,12 +13,7 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import org.json.JSONObject
 import java.io.File
 import java.io.OutputStreamWriter
@@ -35,8 +30,10 @@ class MainActivity : ComponentActivity() {
     private var audioFile: File? = null
     private var isRecording = false
     private var recordingSeconds = 0
+    private var isTranscribing = false
 
     private var wakeLock: PowerManager.WakeLock? = null
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +52,7 @@ class MainActivity : ComponentActivity() {
         recordButton.setOnClickListener {
             if (isRecording) {
                 stopRecording()
-            } else {
+            } else if (!isTranscribing) {
                 startRecording()
             }
         }
@@ -73,14 +70,15 @@ class MainActivity : ComponentActivity() {
         acquireWakeLock()
 
         // Visual feedback
-        rootLayout.setBackgroundColor(0xCC991100.toInt()) // dark red bg
-        recordButton.text = "⏹ Zakończ"
+        rootLayout.setBackgroundColor(0xCC881111.toInt())
+        recordButton.text = "STOP"
         recordButton.setTextColor(0xFFFFFFFF.toInt())
         statusText.text = "Nagrywam..."
         timerText.visibility = View.VISIBLE
+        timerText.text = "00:00"
 
-        // Start timer
-        lifecycleScope.launch {
+        // Timer
+        scope.launch {
             while (isActive && isRecording) {
                 delay(1000)
                 recordingSeconds++
@@ -90,15 +88,13 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Start audio recording
         try {
-            audioFile = File(cacheDir, "voice_note.webm")
+            audioFile = File(cacheDir, "voice_note.m4a")
             audioFile?.delete()
             mediaRecorder = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 MediaRecorder(this)
             } else {
-                @Suppress("DEPRECATION")
-                MediaRecorder()
+                @Suppress("DEPRECATION") MediaRecorder()
             }
             mediaRecorder?.apply {
                 setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
@@ -112,14 +108,12 @@ class MainActivity : ComponentActivity() {
             }
         } catch (e: Exception) {
             stopRecordingState()
-            statusText.text = "✗ ${e.message?.take(25)}"
+            statusText.text = "✗ ${e.message?.take(20)}"
         }
     }
 
     private fun stopRecording() {
-        try {
-            mediaRecorder?.stop()
-        } catch (_: Exception) {}
+        try { mediaRecorder?.stop() } catch (_: Exception) {}
         mediaRecorder?.release()
         mediaRecorder = null
         isRecording = false
@@ -128,10 +122,18 @@ class MainActivity : ComponentActivity() {
 
         val file = audioFile
         if (file != null && file.exists() && file.length() > 0) {
+            // Minimum 2 sekundy
+            if (recordingSeconds < 2) {
+                statusText.text = "Za krótkie"
+                file.delete()
+                resetUiDelayed()
+                return
+            }
+            isTranscribing = true
             statusText.text = "Transkrybuję..."
             transcribeAudio(file)
         } else {
-            statusText.text = "✗ Nagranie puste"
+            statusText.text = "✗ Puste"
             resetUiDelayed()
         }
     }
@@ -139,23 +141,24 @@ class MainActivity : ComponentActivity() {
     private fun stopRecordingState() {
         isRecording = false
         recordButton.text = "Nagraj"
-        rootLayout.setBackgroundColor(0xFF1E1B4B.toInt()) // normal dark bg
+        rootLayout.setBackgroundColor(0xFF1E1B4B.toInt())
         timerText.visibility = View.GONE
         releaseWakeLock()
     }
 
     private fun resetUiDelayed() {
         recordButton.postDelayed({
-            if (!isRecording) {
+            if (!isRecording && !isTranscribing) {
                 statusText.text = "Gotowy"
             }
         }, 2000)
     }
 
     private fun transcribeAudio(file: File) {
-        lifecycleScope.launch(Dispatchers.IO) {
+        // Użyj GlobalScope — nie zależy od Activity lifecycle
+        @OptIn(DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
             try {
-                // Send to Whisper API
                 val whisperUrl = "${BuildConfig.SERVER_URL.replace(":5001", ":9000")}/v1/audio/transcriptions"
                 val boundary = "Boundary-${System.currentTimeMillis()}"
                 val conn = URL(whisperUrl).openConnection() as HttpURLConnection
@@ -166,7 +169,6 @@ class MainActivity : ComponentActivity() {
                 conn.connectTimeout = 30000
                 conn.readTimeout = 30000
 
-                // Build multipart body
                 val body = buildMultipartBody(boundary, file, "pl")
                 conn.outputStream.use { it.write(body) }
 
@@ -179,28 +181,30 @@ class MainActivity : ComponentActivity() {
                     } else {
                         withContext(Dispatchers.Main) {
                             statusText.text = "✗ Pusta transkrypcja"
-                            resetUiDelayed()
+                            isTranscribing = false; resetUiDelayed()
                         }
                     }
                 } else {
-                    val err = conn.errorStream?.bufferedReader()?.readText() ?: "?"
                     withContext(Dispatchers.Main) {
-                        statusText.text = "✗ Whisper: ${conn.responseCode}"
-                        resetUiDelayed()
+                        statusText.text = "✗ Whisper ${conn.responseCode}"
+                        isTranscribing = false; resetUiDelayed()
                     }
                 }
                 conn.disconnect()
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    statusText.text = "✗ ${e.message?.take(30)}"
-                    resetUiDelayed()
+                    statusText.text = "✗ ${e.message?.take(25)}"
+                    isTranscribing = false; resetUiDelayed()
                 }
+            } finally {
+                file.delete()
             }
         }
     }
 
     private fun sendTextToReceiver(text: String) {
-        lifecycleScope.launch(Dispatchers.IO) {
+        @OptIn(DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
             var conn: HttpURLConnection? = null
             try {
                 val url = URL("${BuildConfig.SERVER_URL}/voice-note")
@@ -218,18 +222,18 @@ class MainActivity : ComponentActivity() {
                 if (conn.responseCode == 200) {
                     withContext(Dispatchers.Main) {
                         statusText.text = "✓ Zapisane!"
-                        resetUiDelayed()
+                        isTranscribing = false; resetUiDelayed()
                     }
                 } else {
                     withContext(Dispatchers.Main) {
                         statusText.text = "✗ Błąd ${conn.responseCode}"
-                        resetUiDelayed()
+                        isTranscribing = false; resetUiDelayed()
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    statusText.text = "✗ ${e.message?.take(30)}"
-                    resetUiDelayed()
+                    statusText.text = "✗ ${e.message?.take(25)}"
+                    isTranscribing = false; resetUiDelayed()
                 }
             } finally {
                 conn?.disconnect()
@@ -240,39 +244,27 @@ class MainActivity : ComponentActivity() {
     private fun buildMultipartBody(boundary: String, file: File, language: String): ByteArray {
         val sb = StringBuilder()
         sb.append("--$boundary\r\n")
-        sb.append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.webm\"\r\n")
-        sb.append("Content-Type: audio/webm\r\n\r\n")
+        sb.append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.m4a\"\r\n")
+        sb.append("Content-Type: audio/mp4\r\n\r\n")
         val header = sb.toString().toByteArray()
         val footer = "\r\n--$boundary\r\nContent-Disposition: form-data; name=\"language\"\r\n\r\n$language\r\n--$boundary--\r\n".toByteArray()
-        val fileBytes = file.readBytes()
-        return header + fileBytes + footer
+        return header + file.readBytes() + footer
     }
 
     private fun extractTextFromJson(json: String): String {
-        return try {
-            val obj = JSONObject(json)
-            obj.optString("text", "")
-        } catch (_: Exception) { "" }
+        return try { JSONObject(json).optString("text", "") } catch (_: Exception) { "" }
     }
 
     private fun acquireWakeLock() {
-        try {
-            if (wakeLock?.isHeld == false) {
-                wakeLock?.acquire(120_000)
-            }
-        } catch (_: Exception) {}
+        try { if (wakeLock?.isHeld == false) wakeLock?.acquire(120_000) } catch (_: Exception) {}
     }
 
     private fun releaseWakeLock() {
-        try {
-            if (wakeLock?.isHeld == true) wakeLock?.release()
-        } catch (_: Exception) {}
+        try { if (wakeLock?.isHeld == true) wakeLock?.release() } catch (_: Exception) {}
     }
 
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 1 && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
@@ -288,5 +280,6 @@ class MainActivity : ComponentActivity() {
         mediaRecorder?.release()
         mediaRecorder = null
         releaseWakeLock()
+        scope.cancel()
     }
 }
